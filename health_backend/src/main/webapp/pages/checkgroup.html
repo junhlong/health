@@ -55,7 +55,7 @@
                 <div class="box">
                     <div class="filter-container">
                         <el-input placeholder="编码/名称/助记码" v-model="pagination.queryString" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter"></el-input>
-                        <el-button @click="findPage()" class="dalfBut">查询</el-button>
+                        <el-button @click="findByCondition()" class="dalfBut">查询</el-button>
                         <el-button type="primary" class="butT" @click="handleCreate()">新建</el-button>
                     </div>
                     <el-table size="small" current-row-key="id" :data="dataList" stripe highlight-current-row>
@@ -78,12 +78,12 @@
                     </el-table>
                     <div class="pagination-container">
                         <el-pagination
-                            class="pagiantion"
-                            @current-change="handleCurrentChange"
-                            :current-page="pagination.currentPage"
-                            :page-size="pagination.pageSize"
-                            layout="total, prev, pager, next, jumper"
-                            :total="pagination.total">
+                                class="pagiantion"
+                                @current-change="handleCurrentChange"
+                                :current-page="pagination.currentPage"
+                                :page-size="pagination.pageSize"
+                                layout="total, prev, pager, next, jumper"
+                                :total="pagination.total">
                         </el-pagination>
                     </div>
                     <!-- 新增标签弹层 -->
@@ -280,62 +280,61 @@
                 this.findPage();
             },
             methods: {
+                //条件查询
+                findByCondition(){
+                    this.pagination.currentPage = 1;
+                    this.findPage();
+                },
                 //编辑
                 handleEdit() {
-                    //发送ajax请求，将修改后的表单数据（检查组基本信息、勾选的检查项）提交到后台进行处理
-                    axios.post("/checkgroup/edit.do?checkitemIds=" + this.checkitemIds,this.formData).then((res) => {
-                        //关闭编辑窗口
-                        this.dialogFormVisible4Edit = false;
-                        if(res.data.flag){
-                            //操作成功
+                    axios.post('/checkgroup/edit.do?checkitemIds='+this.checkitemIds,this.formData).then((res)=>{
+                        if (res.data.flag){
                             this.$message({
-                                type:'success',
-                                message:res.data.message
+                                message:res.data.message,
+                                type:'success'
                             });
-                        }else{
-                            //操作失败
-                            this.$message.error(res.data.message);
+                            this.dialogFormVisible4Edit = false;
+                        } else {
+                            this.$message({
+                                message:res.data.message,
+                                type:'error'
+                            });
                         }
-                    }).finally(() =>{
+                    }).finally(()=>{
                         this.findPage();
                     });
                 },
                 //添加
                 handleAdd () {
-                    //alert(this.checkitemIds);
-                    //发送ajax请求，将表单数据提交到后台进行处理
-                    axios.post("/checkgroup/add.do?checkitemIds=" + this.checkitemIds,this.formData).then((res) => {
-                        //关闭新增窗口
-                        this.dialogFormVisible = false;
-                        if(res.data.flag){
-                            //操作成功
+                    axios.post('/checkgroup/add.do?checkitemIds='+this.checkitemIds,this.formData).then((res)=>{
+                        if (res.data.flag){
                             this.$message({
-                                type:'success',
-                                message:res.data.message
+                                message:res.data.message,
+                                type:'success'
                             });
-                        }else{
-                            //操作失败
-                            this.$message.error(res.data.message);
+                            this.dialogFormVisible = false;
+                        } else {
+                            this.$message({
+                                message:res.data.message,
+                                type:'warning'
+                            });
                         }
-                    }).finally(() => {
-                        //重新进行分页查询
+                    }).finally(()=>{
                         this.findPage();
-                    });
+                    })
                 },
                 //分页查询
                 findPage() {
-                    //封装分页参数
-                    var param = {
-                        currentPage:this.pagination.currentPage,
-                        pageSize:this.pagination.pageSize,
+                    var params = {
+                        currentPage: this.pagination.currentPage,
+                        pageSize: this.pagination.pageSize,
                         queryString:this.pagination.queryString
                     };
-                    //发送ajax请求，提交分页相关参数
-                    axios.post("/checkgroup/findPage.do",param).then((res) => {
-                        //为VUE对象的模型数据赋值，基于双向数据绑定展示到页面
-                        this.dataList = res.data.rows;//当前页展示的数据集合
-                        this.pagination.total = res.data.total;//总数据量
-                    });
+                    axios.post('/checkgroup/findGroup.do',params).then((res)=>{
+                        this.dataList = res.data.rows;
+                        // this.dataList = [];
+                        this.pagination.total = res.data.total;
+                    })
                 },
                 // 重置表单
                 resetForm() {
@@ -343,64 +342,54 @@
                 },
                 // 弹出添加窗口
                 handleCreate() {
-                    this.resetForm();
                     this.dialogFormVisible = true;
-                    //发送ajax请求，查询所有的检查项信息，转为json，赋值给tableData
-                    this.activeName = 'first';//默认选中first对应的tab
-                    this.checkitemIds = [];//重置复选框
-                    axios.get("/checkitem/findAll.do").then((res) => {
-                        if(res.data.flag){
-                            //查询检查项数据成功
-                            this.tableData = res.data.data;
-                        }else{
-                            //查询检查项数据失败
-                            this.$message.error(res.data.message);
-                        }
-                    });
+                    this.checkitemIds = [];
+                    this.resetForm();
+                    this.activeName = 'first';
+                    axios.post('/checkitem/findAll.do').then((res)=>{
+                        this.tableData = res.data;
+                    })
                 },
                 // 弹出编辑窗口
                 handleUpdate(row) {
-                    //弹出编辑窗口
-                    this.dialogFormVisible4Edit = true;
                     this.activeName = 'first';
-                    //发送ajax请求，根据检查组ID查询当前检查组数据，用于基本信息的回显
-                    axios.get("/checkgroup/findById.do?id=" + row.id).then((res) => {
-                        if(res.data.flag){
-                            //查询到数据
-                            this.formData = res.data.data;
-                        }else{
-                            //查询数据失败
-                            this.$message.error(res.data.message);
-                        }
+                    this.dialogFormVisible4Edit = true;
+                    this.formData = row;
+                    this.checkitemIds = [];
+                    axios.get('/checkgroup/findGroupByID.do?id='+row.id).then((res)=>{
+                        var checkItems = res.data.checkItems;
+                        checkItems.forEach( (i)=>{
+                            this.checkitemIds.push(i.id);
+                        });
                     });
-                    //发送ajax请求，查询所有的检查项数据，用于展示检查项列表
-                    axios.get("/checkitem/findAll.do").then((res) => {
-                        if(res.data.flag){
-                            //查询检查项数据成功
-                            this.tableData = res.data.data;
-                            //发送ajax请求，根据检查组ID查询当前检查组包含的检查项ID，用于页面复选框回显
-                            axios.get("/checkgroup/findCheckItemIdsByCheckGroupId.do?id=" + row.id).then((res) => {
-                                if(res.data.flag){
-                                    this.checkitemIds = res.data.data;
-                                }else{
-                                    this.$message.error(res.data.message);
-                                }
-                            });
-                        }else{
-                            //查询检查项数据失败
-                            this.$message.error(res.data.message);
-                        }
-                    });
-
+                    axios.post('/checkitem/findAll.do').then((res)=>{
+                        this.tableData = res.data;
+                    })
                 },
                 //切换页码
                 handleCurrentChange(currentPage) {
-                    //为模型数据赋值（当前页面）
                     this.pagination.currentPage = currentPage;
                     this.findPage();
                 },
                 // 删除
                 handleDelete(row) {
+                    this.$confirm('是否确定删除数据？','删除提示').then(()=>{
+                        axios.get('/checkgroup/del.do?id='+row.id).then((res)=>{
+                            if (res.data.flag){
+                                this.$message({
+                                    message:res.data.message,
+                                    type:'success'
+                                });
+                            } else {
+                                this.$message({
+                                    message:res.data.message,
+                                    type:'error'
+                                });
+                            }
+                        }).finally(()=>{
+                            this.findPage();
+                        })
+                    })
                 }
             }
         })
