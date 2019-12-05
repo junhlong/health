@@ -91,7 +91,7 @@
                 </div>
         </div>
         </div>
-    </body>
+        </body>
     <!-- 引入组件库 -->
     <script src="../js/vue.js"></script>
     <script src="../plugins/elementui/index.js"></script>
@@ -121,11 +121,7 @@
             },
             created() {
                 axios.get("/report/getBusinessReportData.do").then((res)=>{
-                    if(res.data.flag){
-                        this.reportData = res.data.data;
-                    }else{
-                        this.$message.error(res.data.message);
-                    }
+                    this.reportData = res.data.data;
                 });
             },
             methods:{
